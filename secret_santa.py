@@ -27,15 +27,19 @@ def main():
     parser.add_argument("--email-sender", default="santa")
     parser.add_argument("--email-subject", default="Secret Santa")
     parser.add_argument("--email-body", default="You drew {name}!")
-    
+    parser.add_argument("--dry-run", action="store_true")
+
     args = parser.parse_args(sys.argv[1:])
 
     groups = parse_groups(args)
 
     picks = draw(groups)
-    
+
     for (giver_name, giver_email), (taker, _) in picks:
-        send_email(args, giver_email, taker)
+        if args.dry_run:
+            print(f"{giver_name} ({giver_email}) -> {taker}")
+        else:
+            send_email(args, giver_email, taker)
 
 
 def parse_groups(args: argparse.Namespace):
@@ -75,9 +79,9 @@ def send_email(args: argparse.Namespace, address: str, name: str) ->  None:
     request_url = f"https://api.mailgun.net/v2/{args.mailgun_domain}/messages"
     from_address = f"{args.email_sender}@{args.mailgun_domain}"
     body = args.email_body.format(name=name)
-    
+
     print("Sending email to %s" % address)
-    
+
     response = requests.post(
         request_url,
         auth=('api', args.mailgun_key), data={
@@ -88,7 +92,8 @@ def send_email(args: argparse.Namespace, address: str, name: str) ->  None:
         },
         verify=True,
     )
+    print(response)
 
-     
+
 if __name__ == '__main__':
     main()
